@@ -1,6 +1,8 @@
 package ru.rzn.sbr.javaschool.lesson10.balls;
 
 import java.awt.Color;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import javax.swing.*;
 
 /**
@@ -40,16 +42,18 @@ public class Solution {
             }
         });
 
+        //  * 1. Изменен метод {@link Solution#main(String[])} таким образом, чтобы вместо явного создания потоков используется
+        // * Executors.newScheduledThreadPool
+        ExecutorService pool = Executors.newScheduledThreadPool(4);
+        nap((int) (5000 * Math.random()));
+        pool.submit(new Ball(world, 50, 80, 5, 10, Color.red));
+        nap((int) (5000 * Math.random()));
+        pool.submit(new Ball(world, 70, 100, 8, 6, Color.blue));
+        nap((int) (5000 * Math.random()));
+        pool.submit(new Ball(world, 150, 100, 9, 7, Color.green));
+        nap((int) (5000 * Math.random()));
+        pool.submit(new Ball(world, 200, 130, 3, 8, Color.black));
         Thread.currentThread().setName("MyMainThread");
-
-        nap((int) (5000 * Math.random()));
-        new Thread(new Ball(world, 50, 80, 5, 10, Color.red)).start();
-        nap((int) (5000 * Math.random()));
-        new Thread(new Ball(world, 70, 100, 8, 6, Color.blue)).start();
-        nap((int) (5000 * Math.random()));
-        new Thread(new Ball(world, 150, 100, 9, 7, Color.green)).start();
-        nap((int) (5000 * Math.random()));
-        new Thread(new Ball(world, 200, 130, 3, 8, Color.black)).start();
         nap((int) (5000 * Math.random()));
     }
 }

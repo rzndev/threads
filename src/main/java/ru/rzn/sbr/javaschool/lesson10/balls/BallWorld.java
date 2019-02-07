@@ -33,4 +33,17 @@ public class BallWorld extends JPanel {
         for (Ball b : balls)
             b.draw(g);
     }
+
+    /**
+     * Получить признак "замороженности" всех мячей, за исключением проверяемого. Если мяч единственный, функция возвращает true.
+     * Если мяч не единственный, то функция возвращает true только в случае, если остальные мячи "заморожены"
+     */
+    public synchronized boolean doesAllOthersFreeze(Ball ball) {
+        boolean result = true;
+        for(Ball item : balls) {
+            if (item == ball) continue;
+            result = result & item.getFreeze();
+        }
+        return result;
+    }
 }
