@@ -1,8 +1,7 @@
 package ru.rzn.sbr.javaschool.lesson10.balls;
 
 import java.awt.Color;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import javax.swing.*;
 
 /**
@@ -42,17 +41,27 @@ public class Solution {
             }
         });
 
+        // cdl используется для проверки запуска всех потоков
+        CountDownLatch cdl = new CountDownLatch(4);
+
         //  * 1. Изменен метод {@link Solution#main(String[])} таким образом, чтобы вместо явного создания потоков используется
         // * Executors.newScheduledThreadPool
-        ExecutorService pool = Executors.newScheduledThreadPool(4);
+        ExecutorService pool = Executors.newScheduledThreadPool(5);
         nap((int) (5000 * Math.random()));
-        pool.submit(new Ball(world, 50, 80, 5, 10, Color.red));
+        world.addTask(pool.submit(new Ball(world, 50, 80, 5, 10, Color.red, cdl)));
         nap((int) (5000 * Math.random()));
-        pool.submit(new Ball(world, 70, 100, 8, 6, Color.blue));
+        world.addTask(pool.submit(new Ball(world, 70, 100, 8, 6, Color.blue, cdl)));
         nap((int) (5000 * Math.random()));
-        pool.submit(new Ball(world, 150, 100, 9, 7, Color.green));
+        world.addTask(pool.submit(new Ball(world, 150, 100, 9, 7, Color.green, cdl)));
         nap((int) (5000 * Math.random()));
-        pool.submit(new Ball(world, 200, 130, 3, 8, Color.black));
+        world.addTask(pool.submit(new Ball(world, 200, 130, 3, 8, Color.black, cdl)));
+
+        try {
+            cdl.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        ((ScheduledExecutorService) pool).schedule(new BallKiller(world), 15, TimeUnit.SECONDS);
         Thread.currentThread().setName("MyMainThread");
         nap((int) (5000 * Math.random()));
     }

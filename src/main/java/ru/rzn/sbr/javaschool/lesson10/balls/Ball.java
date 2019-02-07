@@ -1,7 +1,7 @@
 package ru.rzn.sbr.javaschool.lesson10.balls;
 
 import java.awt.*;
-import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.CountDownLatch;
 
 public class Ball implements Runnable {
 
@@ -24,14 +24,28 @@ public class Ball implements Runnable {
     /**
      * Признак заморозки
      */
-    private boolean isFreeze;
+    private volatile boolean isFreeze = false;
+
+    /**
+     * Самоблокировка с обратным отсчетом для выполнения запуска потока BallKiller после запуска всех потоков
+     * (используется для выполнения задания 3)
+     */
+    private CountDownLatch cdl;
 
     public boolean getFreeze() {
         return isFreeze;
     }
 
-    public Ball(BallWorld world, int xpos, int ypos, int xinc, int yinc, Color col) {
+    public boolean getVisible() {
+        return visible;
+    }
 
+    public void setVisible(boolean isVisible) {
+        this.visible = isVisible;
+    }
+
+    public Ball(BallWorld world, int xpos, int ypos, int xinc, int yinc, Color col, CountDownLatch cdl) {
+        this.cdl = cdl;
         this.world = world;
         this.xpos = xpos;
         this.ypos = ypos;
@@ -46,16 +60,20 @@ public class Ball implements Runnable {
     @Override
     public void run() {
         this.visible = true;
+        cdl.countDown();
         try {
-            while (true) {
+            while (!Thread.interrupted() && visible) {
                 move();
             }
         } catch (InterruptedException e ){
-            // Пока ничего:)
+            System.err.println("Thread " + Thread.currentThread().getName() + " throwed exception " + e.getMessage());
+        } finally {
+            visible = false;
+            world.repaint();
+            world.wakeUpAllFreezedBalls(this); // при завершении потока мяча необходимо убедиться, что хотя бы один
+                                               // поток другого мяча активен
         }
     }
-
-    private final static CyclicBarrier barrier = new CyclicBarrier(4);
 
     public void move() throws InterruptedException {
         if (xpos >= world.getWidth() - BALLW || xpos <= 0) xinc = -xinc;
@@ -68,17 +86,13 @@ public class Ball implements Runnable {
         // п.2 задания. Добавлено для заморозки потока при пересечении мячом диагонали.
         if (checkIsBelowDiagonal() != isBelowDiagonal) {
             isBelowDiagonal = checkIsBelowDiagonal();
-            isFreeze = true;
-            if (!world.doesAllOthersFreeze(this)) {
-                synchronized (world) {
+            synchronized (world) {
+                if (!world.wakeUpAllFreezedBalls(this)) {
+                    isFreeze = true;
                     world.wait();
-                    int resulmed = 1;
+                    isFreeze = false;
                 }
             }
-            synchronized (world) {
-                world.notifyAll();
-            }
-            isFreeze = false;
         }
     }
 
